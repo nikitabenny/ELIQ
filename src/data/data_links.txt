@@ -1,0 +1,3 @@
+https://zenodo.org/record/7523691/files/M4RawV1.1_motion.zip?download=1
+https://zenodo.org/record/7523691/files/M4RawV1.1_multicoil_train.zip?download=1
+https://zenodo.org/record/7523691/files/M4RawV1.1_multicoil_val.zip?download=1
