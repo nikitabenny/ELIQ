@@ -68,3 +68,11 @@ cluster_labels = kmeans_clustering(image_paths, num_clusters)
 # Plot the clustering results
 snr_data = preprocess_images(image_paths)
 plot_clusters(snr_data, cluster_labels)
+
+
+
+# Calculate Silhouette Score
+silhouette_avg = silhouette_score(snr_data, cluster_labels)
+print(f"Silhouette Score: {silhouette_avg}")
+
+return cluster_labels
