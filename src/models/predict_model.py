@@ -1,69 +1,89 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
 
-# Define the Generator model
-def build_generator():
+# Define a simple Generator model
+def build_generator(input_dim):
     model = models.Sequential()
-
-    # Add layers for encoding and decoding (autoencoder component)
-    # Adjust the architecture based on the specifics of your application
-    # Example layers:
-    model.add(layers.Dense(128, activation='relu', input_shape=(input_dim,)))
-    model.add(layers.Dense(256, activation='relu'))
-    model.add(layers.Reshape((8, 8, 4), input_shape=(256,)))
-    # ...
-
+    model.add(layers.Dense(128, input_dim=input_dim, activation='relu'))
+    model.add(layers.Dense(784, activation='sigmoid'))
+    model.add(layers.Reshape((28, 28, 1)))
     return model
 
-# Define the Discriminator model
+class Generator:
+    def __init__(self, input_dim):
+        # Instantiate the generator model
+        self.model = build_generator(input_dim)
+
+    def generate_fake_samples(self, batch_size):
+        # Generate fake samples using the Generator
+        noise = np.random.normal(0, 1, (batch_size, input_dim))
+        fake_samples = self.model.predict(noise)
+        return fake_samples
+
+# Define a simple Discriminator model
 def build_discriminator():
     model = models.Sequential()
-
-    # Add layers for discriminating real vs. generated images
-    # Example layers:
-    model.add(layers.Conv2D(64, (3, 3), strides=(2, 2), padding='same', input_shape=(img_height, img_width, channels)))
-    model.add(layers.LeakyReLU(alpha=0.2))
-    # ...
-
+    model.add(layers.Flatten(input_shape=(28, 28, 1)))
+    model.add(layers.Dense(128, activation='relu'))
+    model.add(layers.Dense(1, activation='sigmoid'))
     return model
 
-# Combine Generator and Discriminator into a GAN model
-def build_gan(generator, discriminator):
-    discriminator.trainable = False  # Freeze the weights of the discriminator during GAN training
-    model = models.Sequential()
-    model.add(generator)
-    model.add(discriminator)
-    return model
+class Discriminator:
+    def __init__(self):
+        # Instantiate the discriminator model
+        self.model = build_discriminator()
 
-# Compile the GAN model
-def compile_gan(gan_model, learning_rate=0.0002, beta_1=0.5):
-    gan_model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(lr=learning_rate, beta_1=beta_1))
-    return gan_model
+    def train_on_batch(self, real_samples, fake_samples):
+        # Train the Discriminator using both real and fake samples
+        labels_real = np.ones((len(real_samples), 1))
+        labels_fake = np.zeros((len(fake_samples), 1))
 
-# Train the GAN model
-def train_gan(generator, discriminator, gan_model, dataset, epochs, batch_size):
-    for epoch in range(epochs):
-        for batch in dataset:
-            # Train Discriminator
-            # ...
+        # Train on real samples
+        d_loss_real = self.model.train_on_batch(real_samples, labels_real)
 
-            # Train Generator via GAN
-            # ...
+        # Train on fake samples
+        d_loss_fake = self.model.train_on_batch(fake_samples, labels_fake)
 
-    # Save the trained model weights
-    generator.save_weights('generator_weights.h5')
+        # Calculate total discriminator loss
+        d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+        return d_loss
 
-# Main execution
-input_dim = 100  # Define the input dimension for the generator
-img_height, img_width, channels = 64, 64, 3  # Define image dimensions
-generator = build_generator()
-discriminator = build_discriminator()
-gan_model = build_gan(generator, discriminator)
-gan_model = compile_gan(gan_model)
+# Define a simple GAN model
+class GAN:
+    def __init__(self, generator, discriminator):
+        # Instantiate the GAN model with a generator and discriminator
+        self.generator = generator
+        self.discriminator = discriminator
 
-# Load and preprocess your dataset (consider using TensorFlow Datasets or other data loading tools)
+    def train_generator(self, batch_size, input_dim):
+        # Train the Generator via GAN
+        noise = np.random.normal(0, 1, (batch_size, input_dim))
+        valid_labels = np.ones((batch_size, 1))
 
-# Train the GAN model
-epochs = 100
-batch_size = 32
-train_gan(generator, discriminator, gan_model, your_dataset, epochs, batch_size)
+        # Train the generator to fool the discriminator
+        g_loss = self.discriminator.model.train_on_batch(self.generator.model.predict(noise), valid_labels)
+        return g_loss
+
+    def train_discriminator(self, real_samples, fake_samples):
+        # Train the Discriminator
+        # Train with real and fake samples and calculate discriminator loss
+        d_loss = self.discriminator.train_on_batch(real_samples, fake_samples)
+        return d_loss
+
+# Example usage:
+input_dim = 100  # Dimension of random noise vector
+generator = Generator(input_dim)
+discriminator = Discriminator()
+gan_model = GAN(generator, discriminator)
+
+# Placeholder data, replace with actual dataset
+real_samples = np.random.rand(32, 28, 28, 1)
+fake_samples = np.random.rand(32, 28, 28, 1)
+
+# Placeholder training loop, replace with actual data and training logic
+d_loss = gan_model.train_discriminator(real_samples, fake_samples)
+g_loss = gan_model.train_generator(32, input_dim)
+
+print("Discriminator Loss:", d_loss)
+print("Generator Loss:", g_loss)
